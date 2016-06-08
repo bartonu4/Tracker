@@ -39,11 +39,13 @@ void Object::predict()
 
     // <<<< Initialization
 
-    kf.predict();
+    auto p = kf.predict();
+    bbox.x = p.x;
+    bbox.y = p.y;
 }
 
-void Object::correct()
-{
+void Object::correct(const cv::Rect &rect, bool cor)
+{/*
     meas.at<float>(0) = bbox.x + bbox.width / 2;
     meas.at<float>(1) = bbox.y + bbox.height / 2;
     meas.at<float>(2) = (float)bbox.width;
@@ -63,8 +65,8 @@ void Object::correct()
     state.at<float>(2) = 0;
     state.at<float>(3) = 0;
     state.at<float>(4) = meas.at<float>(2);
-    state.at<float>(5) = meas.at<float>(3);
-    kf.correct(meas);
+    state.at<float>(5) = meas.at<float>(3);*/
+    prediction =  kf.correct(rect,cor);
 }
 
 int Object::getInvisibleCount() const
@@ -77,7 +79,8 @@ void Object::setCenter(const cv::Point &value)
     center = value;
 }
 
-cv::Point Object::getCenter() const
+cv::Point Object::getCenter()
 {
+    center = calcCenter(bbox);
     return center;
 }

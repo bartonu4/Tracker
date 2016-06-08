@@ -11,16 +11,18 @@ public:
     void updateVisibility();
     void updateInvisibility();
     void predict();
-    void correct();
+    void correct(const cv::Rect &rect,bool cor);
 
     int getInvisibleCount() const;
     cv::Rect bbox;
     void setCenter(const cv::Point &value);
 
-    cv::Point getCenter() const;
+    cv::Point getCenter();
     int id;
     int  age, totalVisibleCount, invisibleCount;
-    cv::Point center;
+    cv::Point center,prediction;
+    SingleKalmanFilter kf;
+    double distance = 0;
 private:
 
     int stateSize = 6;
@@ -28,7 +30,7 @@ private:
     unsigned int type = CV_32F;
 
 
-    SingleKalmanFilter kf;
+
     static int newID ;
     cv::Mat state;
     cv::Mat meas;

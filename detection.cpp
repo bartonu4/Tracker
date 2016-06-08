@@ -13,16 +13,14 @@ float euclideanDist(const cv::Point& p, const cv::Point& q) {
     cv::Point diff = p - q;
     return sqrt(diff.x*diff.x + diff.y*diff.y);
 }
-cv::Point calcCenter(cv::Rect box)
-{
-    return cv::Point(box.x+box.width/2,box.y+box.height/2);
-}
-cv::Ptr<cv::BackgroundSubtractor>  Detection::pMOG= cv::createBackgroundSubtractorMOG2() ;
+
+cv::Ptr<cv::BackgroundSubtractor>  Detection::pMOG= cv::createBackgroundSubtractorMOG2(500,20,false) ;
 vector<Object> Detection::detectObjects(cv::Mat frame)
 {
-    cv::Mat blur;
+    cv::Mat blur,filter;
     cv::imshow("orig",frame);
     cv::GaussianBlur(frame, blur, cv::Size(5, 5), 0, 0);
+    //cv::bilateralFilter ( blur, filter, 15, 80, 80 );
     // <<<<< Noise smoothing
 
     // >>>>> HSV conversion
@@ -42,17 +40,18 @@ vector<Object> Detection::detectObjects(cv::Mat frame)
     // <<<<< Improving the result
 
     pMOG->apply(frmHsv,fgMaskMOG);
+    //cv::fastNlMeansDenoising(fgMaskMOG,fgMaskMOG);
 
-    int  morph_size = 2;
+    int  morph_size = 5;
     cv::Mat opElement = getStructuringElement( cv::MORPH_ELLIPSE, cv::Size( 2*morph_size + 1, 2*morph_size+1 ), cv::Point( morph_size, morph_size ) );
-    morph_size = 2;
+    morph_size = 7;
     cv::Mat clElement = getStructuringElement( cv::MORPH_ELLIPSE, cv::Size( 2*morph_size + 1, 2*morph_size+1 ), cv::Point( morph_size, morph_size ) );
-    for (int i = 0;i<3;i++)
+    for (int i = 0;i<5;i++)
     {
 
-        cv::morphologyEx( fgMaskMOG, fgMaskMOG, cv::MORPH_OPEN, opElement, cv::Point(-1,-1), i );
+        cv::morphologyEx( fgMaskMOG, fgMaskMOG, cv::MORPH_OPEN, opElement, cv::Point(-1,-1), 1 );
 
-        cv::morphologyEx( fgMaskMOG, fgMaskMOG, cv::MORPH_CLOSE, clElement, cv::Point(-1,-1), i );
+        cv::morphologyEx( fgMaskMOG, fgMaskMOG, cv::MORPH_CLOSE, clElement, cv::Point(-1,-1), 1 );
 
 
     }
@@ -73,9 +72,9 @@ vector<Object> Detection::detectObjects(cv::Mat frame)
     int apertureSize = 5;
     double k = 0.05;
     // cornerHarris(fgMaskMOG, dst, blockSize, apertureSize, k, BORDER_DEFAULT);
-    cv::Canny(fgMaskMOG,dst,50,190,3);
+    cv::Canny(fgMaskMOG,dst,50,250,3);
 
-    cv::goodFeaturesToTrack(dst, features,1500,0.05,20,cv::noArray(),3,false);
+    //cv::goodFeaturesToTrack(dst, features,1500,0.05,20,cv::noArray(),3,false);
     // Normalizing
     //        normalize( dst, dst_norm, 0, 255, NORM_MINMAX, CV_32FC1, Mat() );
     //        convertScaleAbs( dst_norm, dst_norm_scaled );
@@ -121,7 +120,11 @@ vector<Object> Detection::detectObjects(cv::Mat frame)
         vector<cv::Point> contour;
         cv::approxPolyDP(contours[i],contour,0.05,true);
         bBox = cv::boundingRect(contour);
-        ballsBox.push_back(bBox);
+        if(bBox.area()>400)
+        {
+             ballsBox.push_back(bBox);
+        }
+
 //        float ratio = (float) bBox.width / (float) bBox.height;
 //        if (ratio > 1.0f)
 //            ratio = 1.0f / ratio;
@@ -137,8 +140,9 @@ if(objects.empty())
 {
     for (size_t i = 0; i < ballsBox.size(); i++)
     {
+
         objects.push_back(Object(ballsBox[i]));
-      //  cv::rectangle(frame,ballsBox[i],cv::Scalar(0,255,0),4);
+
 
 
     }
@@ -154,25 +158,20 @@ if(objects.empty())
     {
         std::stringstream str;
         str<<objects[i].id;
-        if(objects[i].age>=10)
+        if(objects[i].totalVisibleCount>=3)
         {
 
-            ballsBox.push_back(objects[i].bbox);
 
-            //cv::putText(res_frame,str.str(),objects[i].center,2,1,cv::Scalar(255,0,0));
+
+            cv::rectangle(frame,objects[i].bbox,cv::Scalar(0,255,0),2);
+
+            cv::putText(frame,str.str(),cv::Point(objects[i].bbox.x,objects[i].bbox.y),2,1,cv::Scalar(255,0,0));
         }
 
      // std::cout<<objects[i].id;
 
     }
-    for (size_t i = 0; i < ballsBox.size(); i++)
-    {
 
-      cv::rectangle(frame,ballsBox[i],cv::Scalar(0,255,0),2);
-
- *stream <<"bbox center " <<ballsBox[i].x<< " "<<ballsBox[i].y<<"\n";
-    }
-   *stream <<"\nnew frame\n\n ";
     ballsBox.clear();
     cv::imshow("objects",frame);
 
@@ -186,89 +185,113 @@ void showObj(QTextStream &stream,Object &o)
 void Detection::assignObjects()
 {
 
-    if(first==0)
-    {
-        return;
-    }
-    else
-    {
+
         QVector<int> newObjects,visible,invisble;
         QVector<float> dist;
-        cv::Mat distance(objects.size(),ballsBox.size(),CV_32F);
+        vector< vector<double> > Cost(objects.size(),vector<double>(ballsBox.size()));
+        vector<int> assignment;
         bool vis =false;
         float min =0;
         int mInd = 0;
+
         for(int i =0;i<objects.size();i++)
+              {
+                  for(int j =0;j<ballsBox.size();j++)
+                  {
+                      double d = euclideanDist(objects[i].getCenter(),calcCenter(ballsBox[j]));
+                      dist.push_back(d);
+                      Cost[i][j]= d;
+                  }
+        }
+        AssignmentProblemSolver APS;
+        APS.Solve(Cost,assignment,AssignmentProblemSolver::optimal);
+
+        vector<int> not_assigned_tracks;
+
+        for(int i=0;i<assignment.size();i++)
         {
-            for(int j =0;j<ballsBox.size();j++)
+            if(assignment[i]!=-1)
             {
-                float d = euclideanDist(objects[i].getCenter(),calcCenter(ballsBox[j]));
-                dist.push_back(d);
-                distance.at<float>(i,j)=d;
-                if(d<100)
+                if(Cost[i][assignment[i]]>dist_thres)
                 {
-                    vis = true;
-                    if(min>d)
-                    {
-                        min = d;
-                        mInd = j;
-                    }
-
+                    assignment[i]=-1;
+                    // Mark unassigned tracks, and increment skipped frames counter,
+                    // when skipped frames counter will be larger than threshold, track will be deleted.
+                    not_assigned_tracks.push_back(i);
                 }
+                objects[i].distance+= Cost[i][assignment[i]];
 
-
-            }
-
-            if(vis==false )
-            {
-               objects.at(i).updateInvisibility();
-               showObj(*stream,objects.at(i));
+                objects[i].totalVisibleCount++;
             }
             else
             {
-                 objects.at(i).updateVisibility();
-                 objects[i].bbox = ballsBox[mInd];
-                  min =0;
-                  mInd = 0;
+                // If track have no assigned detect, then increment skipped frames counter.
+                objects[i].invisibleCount++;
             }
+
         }
 
-        bool isNewObj=true;
-
-        for(int j =0;j<ballsBox.size();j++)
+        // -----------------------------------
+        // If track didn't get detects long time, remove it.
+        // -----------------------------------
+        for(int i=0;i<objects.size();i++)
         {
-            for(int i =0;i<objects.size();i++)
+            if(objects[i].invisibleCount>maximum_allow_invis||objects[i].distance<1)
             {
-                if(distance.at<float>(i,j)<80)
-                {
-                    isNewObj = false;
-                }
 
-
-            }
-            if(isNewObj ==true)
-            {
-               auto obj = Object(ballsBox.at(j));
-                showObj(*stream,obj);
-                objects.push_back(obj);
-            }
-            isNewObj = true;
-        }
-
-
-        for(int i =0;i<objects.size();i++)
-        {
-            if(objects[i].getInvisibleCount()>=maximum_allow_invis)
-            {
                 objects.erase(objects.begin()+i);
+                assignment.erase(assignment.begin()+i);
                 i--;
             }
+        }
+        // -----------------------------------
+        // Search for unassigned detects
+        // -----------------------------------
+        vector<int> not_assigned_detections;
+        vector<int>::iterator it;
+        for(int i=0;i<ballsBox.size();i++)
+        {
+            it=find(assignment.begin(), assignment.end(), i);
+            if(it==assignment.end())
+            {
+                not_assigned_detections.push_back(i);
+            }
+        }
 
-           // std::cout<<objects[i].id;
+        // -----------------------------------
+        // and start new tracks for them.
+        // -----------------------------------
+        if(not_assigned_detections.size()!=0)
+        {
+            for(int i=0;i<not_assigned_detections.size();i++)
+            {
+                auto obj = Object(ballsBox[not_assigned_detections[i]]);
+                objects.push_back(obj);
+            }
+        }
+        for(int i=0;i<assignment.size();i++)
+        {
+            // If track updated less than one time, than filter state is not correct.
+
+            objects[i].predict();
+
+            if(assignment[i]!=-1) // If we have assigned detect, then update using its coordinates,
+            {
+                objects[i].invisibleCount=0;
+                objects[i].correct(ballsBox[assignment[i]],1);
+            }
+            else				  // if not continue using predictions
+            {
+                objects[i].kf.correct(cv::Rect(cv::Point(0,0),cv::Point(0,0)),0);
+            }
+            objects[i].kf.LastResult = calcCenter(objects[i].bbox);
+         cv::Rect &box = objects[i].bbox;
+         box.x = objects[i].prediction.x-box.width/2;
+         box.y = objects[i].prediction.y-box.height/2;
 
         }
-        ballsBox.clear();
 
-    }
+
+
 
 }

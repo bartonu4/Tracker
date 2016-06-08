@@ -38,8 +38,8 @@ SingleKalmanFilter::SingleKalmanFilter()
     //cv::setIdentity(kf->processNoiseCov, cv::Scalar(1e-2));
     kf->processNoiseCov.at<float>(0) = 1e-2;
     kf->processNoiseCov.at<float>(7) = 1e-2;
-    kf->processNoiseCov.at<float>(14) = 10.0f;
-    kf->processNoiseCov.at<float>(21) = 10.0f;
+    kf->processNoiseCov.at<float>(14) = 15.0f;
+    kf->processNoiseCov.at<float>(21) = 15.0f;
     kf->processNoiseCov.at<float>(28) = 1e-2;
     kf->processNoiseCov.at<float>(35) = 1e-2;
 
@@ -86,12 +86,35 @@ void SingleKalmanFilter::setProcessNoiseCov(int i, const float &value)
     kf->processNoiseCov.at<float>(i) = value;
 }
 
-const cv::Mat& SingleKalmanFilter::predict()
+cv::Point SingleKalmanFilter::predict()
 {
-    return kf->predict();
+    cv::Mat prediction = kf->predict();
+    LastResult=cv::Point(prediction.at<float>(0),prediction.at<float>(1));
+
+    return LastResult;
 }
 
-const cv::Mat &SingleKalmanFilter::correct(const cv::Mat &measurments)
+cv::Point SingleKalmanFilter::correct(cv::Rect rect,bool correct)
 {
-    return kf->correct(measurments);
+    auto p =calcCenter(rect);
+  cv::Mat measurement(measSize,1,CV_32FC1);
+  if(correct)
+  {
+      measurement.at<float>(0) = p.x;  //update using measurements
+      measurement.at<float>(1) = p.y;
+      measurement.at<float>(2) = rect.width;
+      measurement.at<float>(3) = rect.height;
+  }
+
+  else
+  {
+      measurement.at<float>(0) = LastResult.x;  //update using prediction
+      measurement.at<float>(1) = LastResult.y;
+  }
+  cv::Mat estimated = kf->correct(measurement);
+
+  LastResult.x=estimated.at<float>(0);   //update using measurements
+  LastResult.y=estimated.at<float>(1);
+
+  return LastResult;
 }

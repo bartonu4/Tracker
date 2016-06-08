@@ -19,6 +19,7 @@ private:
     int stateSize = 6;
     int measSize = 4;
     int contrSize = 0;
+
 public:
     SingleKalmanFilter();
     void setTransitionMatrix(int i,const float &value);
@@ -26,9 +27,13 @@ public:
     void setErrorCov(int i, const float &value);
     void setStatePre(const cv::Rect &bbox);
     void setStatePost(const cv::Rect &bbox);
-    const cv::Mat &predict();
-    const cv::Mat & correct(const cv::Mat &measurments);
+    cv::Point predict();
+    cv::Point correct(cv::Rect rect, bool correct);
+    cv::Point LastResult;
 
 };
-
+inline cv::Point calcCenter(cv::Rect box)
+{
+    return cv::Point(box.x+box.width/2,box.y+box.height/2);
+}
 #endif // SINGLEKALMANFILTER_H

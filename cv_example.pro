@@ -20,12 +20,14 @@ libopencv_video310\
 libopencv_videoio310\
 libopencv_videostab310\
 libopencv_objdetect310\
+libopencv_photo310\
 
 SOURCES += main.cpp \
     singlekalmanfilter.cpp \
     object.cpp \
     detection.cpp \
-    reader.cpp
+    reader.cpp \
+    HungarianAlg.cpp
 
 DISTFILES += \
     ../../Downloads/test.mp4
@@ -34,7 +36,8 @@ HEADERS += \
     singlekalmanfilter.h \
     object.h \
     detection.h \
-    reader.h
+    reader.h \
+    HungarianAlg.h
 
 
 
