@@ -15,8 +15,8 @@ class Reader : public QObject
      int frameCounter;
 public:
     explicit Reader(QObject *parent = 0);
-    cv::VideoCapture openFromFile();
-    cv::VideoCapture openCam();
+    cv::Point openFromFile();
+    cv::Point openCam();
     cv::Mat  getFrame();
 signals:
 

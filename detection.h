@@ -16,15 +16,17 @@ class Detection
     vector<Object> objects;
     int first=0;
     int maximum_allow_invis = 1;
-    int dist_thres = 120;
+    float dist_thres = 150;
    vector<cv::Rect> ballsBox;
    QFile *file;
    QTextStream *stream;
+
 
 public:
     Detection();
      vector<Object> detectObjects(cv::Mat frame);
      void assignObjects();
+     void calcMaxDistance(int width,int height);
 
 };
 

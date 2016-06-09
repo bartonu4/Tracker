@@ -840,7 +840,9 @@
 int main(int argc,char *argv[]){
     QApplication app(argc, argv);
     Reader reader;
+    cv::Point size = reader.openFromFile();
     Detection detect;
+    detect.calcMaxDistance(size.x,size.y);
         char ch = 0;
     while(ch!='q')
     {

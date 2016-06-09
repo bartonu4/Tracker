@@ -208,7 +208,7 @@ void Detection::assignObjects()
                       dist.push_back(d);
                       Cost[i][j]= d;
                   }
-        }
+        }   
         AssignmentProblemSolver APS;
         APS.Solve(Cost,assignment,AssignmentProblemSolver::optimal);
 
