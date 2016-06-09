@@ -2,7 +2,7 @@
 #include <iostream>
 #include <limits>
 #include <time.h>
-// http://community.topcoder.com/tc?module=Static&d1=tutorials&d2=hungarianAlgorithm
+
 using namespace std;
 class AssignmentProblemSolver
 {
