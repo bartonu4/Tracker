@@ -80,29 +80,10 @@ vector<Object> Detection::detectObjects(cv::Mat frame)
     // cornerHarris(fgMaskMOG, dst, blockSize, apertureSize, k, BORDER_DEFAULT);
     cv::Canny(fgMaskMOG,dst,50,250,3);
 
-    //cv::goodFeaturesToTrack(dst, features,1500,0.05,20,cv::noArray(),3,false);
-    // Normalizing
-    //        normalize( dst, dst_norm, 0, 255, NORM_MINMAX, CV_32FC1, Mat() );
-    //        convertScaleAbs( dst_norm, dst_norm_scaled );
-
-    //        // Drawing a circle around corners
-    //        vector<Point> box;
-    //        for( int j = 0; j < dst_norm.rows ; j++ )
-    //        {
-    //            for( int i = 0; i < dst_norm.cols; i++ )
-    //            {
-    //                if( (int) dst_norm.at<float>(j,i) > 220 )
-    //                {
-    //                    circle( dst_norm_scaled, Point( i, j ), 8,  Scalar(120), 2, 8, 0 )ZZ;
-
-    //                }
-
-    //            }
-    //        }
 
     for( uint j = 0; j < features.size() ; j++ )
     {
-        cv::circle(dst,features.at(j),8,cv::Scalar(120),2);
+        //cv::circle(dst,features.at(j),8,cv::Scalar(120),2);
     }
 
 
@@ -126,7 +107,7 @@ vector<Object> Detection::detectObjects(cv::Mat frame)
         vector<cv::Point> contour;
         cv::approxPolyDP(contours[i],contour,0.05,true);
         bBox = cv::boundingRect(contour);
-        if(bBox.area()>100)
+        if(bBox.area()>200)
         {
              ballsBox.push_back(bBox);
         }

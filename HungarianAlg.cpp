@@ -9,7 +9,7 @@ AssignmentProblemSolver::AssignmentProblemSolver()
 AssignmentProblemSolver::~AssignmentProblemSolver()
 {
 }
-#define DBL_MAX 20
+#define DBL_MAX 100
 double AssignmentProblemSolver::Solve(vector<vector<double>>& DistMatrix,vector<int>& Assignment,TMethod Method)
 {
 	int N=DistMatrix.size(); // number of columns (tracks)
