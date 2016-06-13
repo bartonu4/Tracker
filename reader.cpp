@@ -4,12 +4,14 @@ Reader::Reader(QObject *parent) : QObject(parent)
 {
 frameCounter = 0;
 }
-
 cv::Point Reader::openFromFile()
 {
     QString path = QFileDialog::getOpenFileName(new QWidget(), tr("Find Files"), QString("f:/test3.avi"));
 
-
+    filename = path.split("/").last();
+    filename = filename.split(".").first();
+    filename.append(".mpeg");
+     std::cout <<"filename "<<filename.toStdString();
     cap.open(path.toStdString());
     if(!cap.isOpened())
     {
@@ -28,11 +30,11 @@ cv::Point Reader::openCam()
 cv::Mat Reader::getFrame()
 {
 
-
         if(frameCounter == cap.get(cv::CAP_PROP_FRAME_COUNT))
         {
             cap.set(cv::CAP_PROP_POS_FRAMES,0);
             frameCounter = 0;
+            std::cout <<"\nrepeat\n";
         }
 
         cv::Mat frame;

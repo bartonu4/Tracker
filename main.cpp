@@ -840,20 +840,33 @@
 int main(int argc,char *argv[]){
     QApplication app(argc, argv);
     Reader reader;
-    cv::Point size = reader.openFromFile();
+    int c = 0;
+    std::cout <<"Press 0 to open from file and 1 to open Cam\n";
+
+    std::cin >> c;
+     cv::Point size;
+    if(!c){
+   size = reader.openFromFile();
+    }
+    else
+    {
+       size = reader.openCam();
+    }
     Detection detect;
     detect.calcMaxDistance(size.x,size.y);
         char ch = 0;
+        cv::VideoWriter vw=cv::VideoWriter(reader.filename.toStdString(), CV_FOURCC('P','I','M','1'), 20, cv::Size(size.x*2+10,size.y*2+10));
     while(ch!='q')
     {
 
 
-    detect.detectObjects(reader.getFrame());
+    vw << detect.detectObjects(reader.getFrame());
 
     ch = cv::waitKey(1);
+
         }
 
-
+    vw.release();
 
     return app.exec();
 

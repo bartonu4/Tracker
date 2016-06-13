@@ -21,6 +21,7 @@ libopencv_videoio310\
 libopencv_videostab310\
 libopencv_objdetect310\
 libopencv_photo310\
+libopencv_ffmpeg310\
 
 SOURCES += main.cpp \
     singlekalmanfilter.cpp \

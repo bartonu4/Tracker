@@ -18,6 +18,7 @@ public:
     cv::Point openFromFile();
     cv::Point openCam();
     cv::Mat  getFrame();
+    QString filename;
 signals:
 
 public slots:

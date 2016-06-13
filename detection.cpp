@@ -3,6 +3,8 @@
 void Detection::calcMaxDistance(int width, int height)
 {
     dist_thres = sqrtf(width*width+height*height)*0.1;
+    minArea = width*height*0.001;
+    //minArea =400;
 }
 
 Detection::Detection()
@@ -18,13 +20,24 @@ float euclideanDist(const cv::Point& p, const cv::Point& q) {
     cv::Point diff = p - q;
     return sqrt(diff.x*diff.x + diff.y*diff.y);
 }
+
 int history = 200;
 int threshold = history*0.7;
 cv::Ptr<cv::BackgroundSubtractor>  Detection::pMOG= cv::createBackgroundSubtractorMOG2(history,threshold,false) ;
-vector<Object> Detection::detectObjects(cv::Mat frame)
+cv::Mat Detection::detectObjects(cv::Mat frame)
 {
     cv::Mat blur,filter;
-    cv::imshow("orig",frame);
+    cv::Point size(frame.cols,frame.rows);
+    cv::Mat allImages(size.y*2+10,size.x*2+10,frame.type());
+    cv::Rect roi(0,0,size.x,size.y);
+    //cv::Mat roi(all,cv::Range(0,0+frame.cols),cv::Range(0,0+frame.rows));
+
+    frame.copyTo(allImages(roi));
+
+
+
+
+    //cv::imshow("orig",allImages);
     cv::GaussianBlur(frame, blur, cv::Size(5, 5), 0, 0);
     //cv::bilateralFilter ( blur, filter, 15, 80, 80 );
     // <<<<< Noise smoothing
@@ -66,50 +79,41 @@ vector<Object> Detection::detectObjects(cv::Mat frame)
     // Thresholding f
 
 
-    cv::imshow("Threshold", fgMaskMOG);
+    //cv::imshow("Threshold", fgMaskMOG);
+    roi = cv::Rect(size.x+10,0,size.x,size.y);
+    cv::Mat mask;
+
+    cv::cvtColor(fgMaskMOG,mask,CV_GRAY2BGR);
+    mask.convertTo(allImages(roi),allImages.type());
 
     //Create parameters for Harris corner
 
     vector<cv::Point2f> features;
 
-    cv::Mat dst, dst_norm, dst_norm_scaled;
+    cv::Mat dst, dst_norm;
     dst = cv::Mat::zeros(fgMaskMOG.size(), CV_32FC1);
-    int blockSize = 7;
-    int apertureSize = 5;
-    double k = 0.05;
+
+
     // cornerHarris(fgMaskMOG, dst, blockSize, apertureSize, k, BORDER_DEFAULT);
     cv::Canny(fgMaskMOG,dst,50,250,3);
 
-    //cv::goodFeaturesToTrack(dst, features,1500,0.05,20,cv::noArray(),3,false);
-    // Normalizing
-    //        normalize( dst, dst_norm, 0, 255, NORM_MINMAX, CV_32FC1, Mat() );
-    //        convertScaleAbs( dst_norm, dst_norm_scaled );
-
-    //        // Drawing a circle around corners
-    //        vector<Point> box;
-    //        for( int j = 0; j < dst_norm.rows ; j++ )
-    //        {
-    //            for( int i = 0; i < dst_norm.cols; i++ )
-    //            {
-    //                if( (int) dst_norm.at<float>(j,i) > 220 )
-    //                {
-    //                    circle( dst_norm_scaled, Point( i, j ), 8,  Scalar(120), 2, 8, 0 )ZZ;
-
-    //                }
-
-    //            }
-    //        }
 
     for( uint j = 0; j < features.size() ; j++ )
     {
-        cv::circle(dst,features.at(j),8,cv::Scalar(120),2);
+        //cv::circle(dst,features.at(j),8,cv::Scalar(120),2);
     }
 
 
+    roi = cv::Rect(0,size.y+10,size.x,size.y);
+    //cv::Mat m
+    dst.copyTo(dst_norm);
+    cv::cvtColor(dst_norm,mask,CV_GRAY2BGR);
+    mask.convertTo(allImages(roi),allImages.type());
 
 
 
-    cv::imshow("canny", dst);
+
+   // cv::imshow("canny", dst);
     // >>>>> Contours detection
     vector<vector<cv::Point> > contours;
     cv::findContours(dst, contours, CV_RETR_EXTERNAL,
@@ -126,7 +130,7 @@ vector<Object> Detection::detectObjects(cv::Mat frame)
         vector<cv::Point> contour;
         cv::approxPolyDP(contours[i],contour,0.05,true);
         bBox = cv::boundingRect(contour);
-        if(bBox.area()>100)
+        if(bBox.area()>minArea)
         {
              ballsBox.push_back(bBox);
         }
@@ -179,15 +183,24 @@ if(objects.empty())
     }
 
     ballsBox.clear();
-    cv::imshow("objects",frame);
 
-    return objects;
+    roi = cv::Rect(size.x+10,size.y+10,size.x,size.y);
+    frame.copyTo(allImages(roi));
+    cv::line(allImages,cv::Point(0,size.y),cv::Point(allImages.cols,size.y),cv::Scalar(255,255,255),10);
+    cv::line(allImages,cv::Point(size.x,0),cv::Point(size.x,allImages.rows),cv::Scalar(255,255,255),10);
+
+    cv::imshow("objects",allImages);
+
+    return allImages;
 }
 void showObj(QTextStream &stream,Object &o)
 {
     stream<<"Object id="<<o.id<<" age = "<<o.age <<" visibility"<<o.totalVisibleCount<<"\n\n";
 
 }
+
+
+
 void Detection::assignObjects()
 {
 
