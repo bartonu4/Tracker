@@ -2,7 +2,7 @@
 #include <iostream>
 #include <limits>
 #include <time.h>
-
+#include <float.h>
 using namespace std;
 class AssignmentProblemSolver
 {
@@ -10,6 +10,7 @@ private:
 	// --------------------------------------------------------------------------
 	// Computes the optimal assignment (minimum overall costs) using Munkres algorithm.
 	// --------------------------------------------------------------------------
+
 	void assignmentoptimal(int *assignment, double *cost, double *distMatrix, int nOfRows, int nOfColumns);
 	void buildassignmentvector(int *assignment, bool *starMatrix, int nOfRows, int nOfColumns);
 	void computeassignmentcost(int *assignment, double *cost, double *distMatrix, int nOfRows);
@@ -28,7 +29,7 @@ private:
 	void assignmentsuboptimal2(int *assignment, double *cost, double *distMatrixIn, int nOfRows, int nOfColumns);
 public:
 	enum TMethod { optimal, many_forbidden_assignments, without_forbidden_assignments };
-	AssignmentProblemSolver();
+    AssignmentProblemSolver();
 	~AssignmentProblemSolver();
 	double Solve(vector<vector<double>>& DistMatrix,vector<int>& Assignment,TMethod Method=optimal);
 };

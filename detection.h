@@ -25,7 +25,7 @@ class Detection
 
 
 public:
-    Detection();
+    Detection(int area);
     cv::Mat detectObjects(cv::Mat frame);
      void assignObjects();
      void calcMaxDistance(int width,int height);

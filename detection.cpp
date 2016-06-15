@@ -3,13 +3,13 @@
 void Detection::calcMaxDistance(int width, int height)
 {
     dist_thres = sqrtf(width*width+height*height)*0.1;
-    minArea = width*height*0.001;
-    //minArea =400;
+    //minArea = width*height*0.001;
+   // minArea =500;
 }
 
-Detection::Detection()
+Detection::Detection(int area)
 {
-
+minArea = area;
 file = new QFile("result.log");
   if(!file->open(QIODevice::Text|QIODevice::WriteOnly))
       return;
@@ -21,7 +21,7 @@ float euclideanDist(const cv::Point& p, const cv::Point& q) {
     return sqrt(diff.x*diff.x + diff.y*diff.y);
 }
 
-int history = 200;
+int history = 50;
 int threshold = history*0.7;
 cv::Ptr<cv::BackgroundSubtractor>  Detection::pMOG= cv::createBackgroundSubtractorMOG2(history,threshold,false) ;
 cv::Mat Detection::detectObjects(cv::Mat frame)
@@ -38,32 +38,32 @@ cv::Mat Detection::detectObjects(cv::Mat frame)
 
 
     //cv::imshow("orig",allImages);
-    cv::GaussianBlur(frame, blur, cv::Size(5, 5), 0, 0);
+    //cv::GaussianBlur(frame, blur, cv::Size(5, 5), 0, 0);
     //cv::bilateralFilter ( blur, filter, 15, 80, 80 );
     // <<<<< Noise smoothing
 
     // >>>>> HSV conversion
-    cv::Mat frmHsv;
-    cv::cvtColor(blur, frmHsv, CV_BGR2HSV);
+    //cv::Mat frmHsv;
+    //cv::cvtColor(frame, frmHsv, CV_BGR2HSV);
     // <<<<< HSV conversion
 
 
     // >>>>> Color Thresholding
     // Note: change parameters for different colors
     cv::Mat rangeRes = cv::Mat::zeros(frame.size(), CV_8UC1);
-    cv::inRange(frmHsv, cv::Scalar(100 , 100, 80),cv::Scalar(150, 255, 255), rangeRes);
+    //cv::inRange(frmHsv, cv::Scalar(100 , 100, 80),cv::Scalar(150, 255, 255), rangeRes);
     // <<<<< Color Thresholding
 
     // >>>>> Improving the result
     cv::Mat fgMaskMOG;
     // <<<<< Improving the result
 
-    pMOG->apply(frmHsv,fgMaskMOG);
+    pMOG->apply(frame,fgMaskMOG);
     //cv::fastNlMeansDenoising(fgMaskMOG,fgMaskMOG);
     auto element = cv::MORPH_ELLIPSE;
-    int  morph_size = 3;
+    int  morph_size = 1;
     cv::Mat opElement = getStructuringElement( element, cv::Size( 2*morph_size + 1, 2*morph_size+1 ), cv::Point( morph_size, morph_size ) );
-    morph_size = 7;
+    morph_size = 5;
     cv::Mat clElement = getStructuringElement( element, cv::Size( 2*morph_size + 1, 2*morph_size+1 ), cv::Point( morph_size, morph_size ) );
     for (int i = 0;i<5;i++)
     {
@@ -77,7 +77,12 @@ cv::Mat Detection::detectObjects(cv::Mat frame)
 
 
     // Thresholding f
+    vector<cv::Point2f> features;
+     //cv::cvtColor(frame, rangeRes, CV_BGR2GRAY);
+    //imshow("rangres",);
 
+
+  // cv::goodFeaturesToTrack(rangeRes,features,100,0.01,10);
 
     //cv::imshow("Threshold", fgMaskMOG);
     roi = cv::Rect(size.x+10,0,size.x,size.y);
@@ -88,7 +93,7 @@ cv::Mat Detection::detectObjects(cv::Mat frame)
 
     //Create parameters for Harris corner
 
-    vector<cv::Point2f> features;
+
 
     cv::Mat dst, dst_norm;
     dst = cv::Mat::zeros(fgMaskMOG.size(), CV_32FC1);
@@ -100,7 +105,7 @@ cv::Mat Detection::detectObjects(cv::Mat frame)
 
     for( uint j = 0; j < features.size() ; j++ )
     {
-        //cv::circle(dst,features.at(j),8,cv::Scalar(120),2);
+        cv::circle(frame,features.at(j),8,cv::Scalar(120),2);
     }
 
 
@@ -175,7 +180,7 @@ if(objects.empty())
 
             cv::rectangle(frame,objects[i].bbox,cv::Scalar(0,255,0),2);
 
-            cv::putText(frame,str.str(),cv::Point(objects[i].bbox.x,objects[i].bbox.y),2,1,cv::Scalar(255,0,0));
+            cv::putText(frame,str.str(),cv::Point(objects[i].bbox.x,objects[i].bbox.y),1,1,cv::Scalar(0,0,200));
         }
 
      // std::cout<<objects[i].id;
@@ -189,7 +194,8 @@ if(objects.empty())
     cv::line(allImages,cv::Point(0,size.y),cv::Point(allImages.cols,size.y),cv::Scalar(255,255,255),10);
     cv::line(allImages,cv::Point(size.x,0),cv::Point(size.x,allImages.rows),cv::Scalar(255,255,255),10);
 
-    cv::imshow("objects",allImages);
+    //cv::imshow("objects",allImages);
+    cv::imshow("track", frame);
 
     return allImages;
 }

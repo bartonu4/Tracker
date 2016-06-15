@@ -3,6 +3,7 @@
 Reader::Reader(QObject *parent) : QObject(parent)
 {
 frameCounter = 0;
+
 }
 cv::Point Reader::openFromFile()
 {
